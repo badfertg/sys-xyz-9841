@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LAM RP - RP | نظام مراجعة وتقييم اختبارات الرول بلاي</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent-color: #5865F2;
+      --accent-hover: #4752C4;
+      --text-color: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+      --success-color: #22c55e;
+      --danger-color: #ef4444;
+      --warning-color: #f59e0b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-color); min-height: 100vh; padding: 1rem; }
+    .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; max-width: 900px; margin: 0 auto 1.5rem; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.4rem; color: var(--text-muted); font-size: 0.9rem; }
+    input[type="text"], input[type="number"], input[type="file"], select { width: 100%; padding: 0.75rem; background-color: #0f172a; border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 0.95rem; }
+    input:focus, select:focus { outline: none; border-color: var(--accent-color); }
+    .btn { background-color: var(--accent-color); color: #fff; border: none; padding: 0.85rem 1.5rem; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 1.05rem; }
+    .btn:hover { background-color: var(--accent-hover); }
+    .q-box { background: #111827; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-right: 4px solid var(--accent-color); }
+    .score-select { margin-top: 0.5rem; background: #1e293b; color: #f8fafc; font-weight: bold; }
+    .model-ans { color: var(--success-color); font-size: 0.85rem; margin-top: 0.3rem; }
+    
+    .brand-title {
+      text-align: center;
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: #38bdf8;
+      letter-spacing: 2px;
+      margin-bottom: 0.2rem;
+      text-transform: uppercase;
+    }
+
+    .sub-brand {
+      text-align: center;
+      color: var(--warning-color);
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-bottom: 0.8rem;
+    }
+
+    .timer-display {
+      text-align: center;
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      padding: 0.6rem;
+      border-radius: 8px;
+      color: #38bdf8;
+      font-weight: bold;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    .view-section {
+      background: #111827;
+      border: 1px dashed var(--border-color);
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="brand-title">LAM RP</div>
+    <div class="sub-brand">RP SYSTEM</div>
+    <p style="text-align: center; color: var(--text-muted); margin-bottom: 1rem;">نظام تقييم ومراجعة اختبارات الرول بلاي والربط مع الديسكورد</p>
+
+    <!-- عرض الوقت المستغرق -->
+    <div class="timer-display" id="timer-box">
+      ⏱️ المستغرق في هذا التقييم: <span id="timer-text">0 دقيقة و 0 ثانية</span>
+    </div>
+
+    <!-- قسم الاطلاع على الأسئلة والإجابات المعتمدة -->
+    <div class="view-section">
+      <h3 style="color: var(--warning-color); margin-bottom: 0.8rem; font-size: 1.1rem;">📖 الاطلاع على الأسئلة والإجابات والسيناريوهات المعتمدة</h3>
+      <div class="form-group" style="margin-bottom: 0.5rem;">
+        <label for="preview-model-select">اختر النموذج للاطلاع:</label>
+        <select id="preview-model-select" onchange="renderModelPreviewContent()">
+          <option value="1">النموذج الأول (1)</option>
+          <option value="2">النموذج الثاني (2)</option>
+          <option value="3">النموذج الثالث (3)</option>
+          <option value="4">النموذج الرابع (4)</option>
+          <option value="5">النموذج الخامس (5)</option>
+        </select>
+      </div>
+      <div id="preview-content-container" style="max-height: 220px; overflow-y: auto; background: #0f172a; padding: 0.75rem; border-radius: 6px; font-size: 0.9rem; color: #cbd5e1;"></div>
+    </div>
+    
+    <form id="submission-form">
+      <!-- بيانات الإداري -->
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="tester-name">الاسم الإداري:</label>
+          <input type="text" id="tester-name" placeholder="مثال: Admin_Name" required />
+        </div>
+        <div class="form-group">
+          <label for="tester-id">الـ Copy ID للإداري في الديسكورد:</label>
+          <input type="text" id="tester-id" placeholder="مثال: 123456789012345678" required />
+        </div>
+      </div>
+
+      <!-- بيانات اللاعب -->
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="player-name">اسم اللاعب الحقيقي:</label>
+          <input type="text" id="player-name" placeholder="مثال: Player_Name" required />
+        </div>
+        <div class="form-group">
+          <label for="player-id">الـ Copy ID للاعب في الديسكورد:</label>
+          <input type="text" id="player-id" placeholder="مثال: 987654321098765432" required />
+        </div>
+      </div>
+
+      <!-- رفع مقطع الفيديو بدل الرابط -->
+      <div class="form-group">
+        <label for="proof-file">🎥 رفع مقطع توثيق الاختبار (ملف فيديو):</label>
+        <input type="file" id="proof-file" accept="video/*" />
+      </div>
+
+      <!-- حسابات الديسكورد إن وجد -->
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="has-alt-accounts">هل توجد حسابات ديسكورد أخرى للشخص؟</label>
+          <select id="has-alt-accounts" onchange="toggleAltAccountsField()">
+            <option value="لا">لا يوجد</option>
+            <option value="نعم">يوجد</option>
+          </select>
+        </div>
+        <div class="form-group" id="alt-accounts-file-group" style="display: none;">
+          <label for="alt-accounts-file">📸 إرفاق صورة حسابات الديسكورد:</label>
+          <input type="file" id="alt-accounts-file" accept="image/*" />
+        </div>
+      </div>
+
+      <!-- خانة العمر برقم و خانة تحت 16 -->
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="player-age">🔢 عمر اللاعب (بالأرقام):</label>
+          <input type="number" id="player-age" placeholder="مثال: 18" min="1" max="100" required />
+        </div>
+        <div class="form-group">
+          <label for="under-16">هل الشخص تحت سن الـ 16 سنة؟</label>
+          <select id="under-16">
+            <option value="لا">لا (16 سنة أو أكثر)</option>
+            <option value="نعم">نعم (تحت 16 سنة)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="model-select">اختر النموذج للاختبار الفعلي:</label>
+        <select id="model-select" onchange="loadQuestions()">
+          <option value="1">النموذج الأول (1)</option>
+          <option value="2">النموذج الثاني (2)</option>
+          <option value="3">النموذج الثالث (3)</option>
+          <option value="4">النموذج الرابع (4)</option>
+          <option value="5">النموذج الخامس (5)</option>
+        </select>
+      </div>
+
+      <div id="questions-container"></div>
+
+      <button type="submit" class="btn">إرسال النتيجة والتقييم للديسكورد 🚀</button>
+    </form>
+  </div>
+
+  <script>
+    const DISCORD_WEBHOOK_SUCCESS = "https://discord.com/api/webhooks/1559999951302303874/cMt0r_ij2GI6RAPWqQT1FIbiAppPjZZ9MFAgmrTwmMTE2BD6vmrGyKN6YPn23pirpXhl";
+    const DISCORD_WEBHOOK_FAIL = "https://discord.com/api/webhooks/1560000091924996196/rKOLr93FL9GugWp4-ErA2B_ALdg6_jsD1nM5tKxwBzryBACjDNra36Apb3stklSaqxz7";
+    const DISCORD_WEBHOOK_UNDER16 = "https://discord.com/api/webhooks/1560000206861238404/Dab8TWFBsainW6wW8pJbCD0DIFFhDMqElNXBCyHDGCichda1iAVm8O3UNX8b7UW8ajTG";
+
+    function toggleAltAccountsField() {
+      const val = document.getElementById('has-alt-accounts').value;
+      const group = document.getElementById('alt-accounts-file-group');
+      if (val === 'نعم') {
+        group.style.display = 'block';
+      } else {
+        group.style.display = 'none';
+        document.getElementById('alt-accounts-file').value = '';
+      }
+    }
+
+    let startTime = Date.now();
+    let timerInterval = null;
+
+    function startTimer() {
+      startTime = Date.now();
+      if (timerInterval) clearInterval(timerInterval);
+
+      timerInterval = setInterval(() => {
+        let elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        let minutes = Math.floor(elapsedSeconds / 60);
+        let seconds = elapsedSeconds % 60;
+        document.getElementById('timer-text').innerText = `${minutes} دقيقة و ${seconds} ثانية`;
+      }, 1000);
+    }
+
+    function getFormattedElapsedTime() {
+      let elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      let minutes = Math.floor(elapsedSeconds / 60);
+      let seconds = elapsedSeconds % 60;
+      return `${minutes} دقيقة و ${seconds} ثانية`;
+    }
+
+    const fullModelsData = {
+      1: [
+        { q: "س1: لو طلعوا عليك 3 أناس مسلحين وقالوا لك انزل من سيارتك، وش تسوي عشان تطبق قانون تقدير الحياة؟", a: "أوقف السيارة فوراً وأرفع يدي وأنفذ أوامرهم بدون ما أقاوم عشان أحمي حياة شخصيتي." },
+        { q: "س2: لو عرفت موقع تاجر عن طريق بث مباشر وتوجهت للمكان، وش تعتبر هذه المخالفة ووش عقوبتها؟", a: "تعتبر مخالفة META GAMING، وعقوبتها الحظر (باند) من السيرفر لاستغلال معلومات من خارج اللعبة." },
+        { q: "س3: وش شروط الخطف البسيطة داخل المدينة؟", a: "يكون فيه سبب واضح، وما تخطف مسعف يؤدي شغله، وما تخطف في الأماكن الآمنة." },
+        { q: "س4: لو أطلقوا عليك نار وطحت بالأرض قبل ما يوصل المسعف، وش المسموح لك تقوله؟", a: "أتأوه وأتألم من الإصابة بس، وممنوع أعطي أوامر لأخوياي أو أتكلم في الراديو." },
+        { q: "س5: لو طارت سيارتك بالهواء بسبب مشكلة تقنية أثناء المطاردة، وش تسوي؟", a: "في حال استكملوا معي في السيناريو بدون تقديم مساعدة أو فرصة لأخذ مركبة، أتوجه بعد انتهاء الحالة للدعم الفني." },
+        { q: "س6: وش يعني FORCE RP وأعطنا مثال بسيط عليه؟", a: "هو فرض الفعل على اللاعب بدون ما تعطيه خيار للتفاعل، مثل تكتب أمر أنك ذبحته وفنشته فوراً بدون ما يتجاوب معك." },
+        { q: "س7: اذكر ثلاث مناطق آمنة داخل المدينة؟", a: "المستشفى، المطاعم والبنر العامة، والكراجات." },
+        { q: "س8: لو شفت الدوريات في إطلاق نار في الشارع وأنت تبي تمر، وش تصرفك السليم؟", a: "أبتعد فوراً وآخذ طريق ثاني وما أقف وأتفرج عشان ما يعرض حياتي للخطر." },
+        { q: "س9: وش الفرق بين القتل المخطط له وبين RDM؟", a: "القتل المخطط يكون له سبب وعداوة سابقة، أما RDM فهو القتل المباشر والعشوائي بدون أي سبب أو كلام مسبق." },
+        { q: "س10: كيف تسوي قصة لشخصيتك وتلتزم فيها داخل السيرفر؟", a: "أحدد اسمها ومهنتها وطريقتها بالكلام، وألتزم بهذا الدور في كل تصرفاتي داخل المدينة." },
+        { q: "السيناريو (1): مواطن صدمته دورية وطالبته يتوقف، قام ولف على الجبل ونقز بسيارته الرياضية من مكان عالي جداً ولما انقلبت السيارة نزل منها وقام يركض ولا كأن صار له شيء.", a: "📍 الخطأ: ارتكاب FAIL RP والقفز بالسيارة بطريقة غير واقعية وعدم تمثيل تمزق أو إصابة بعد الحادث القوي." },
+        { q: "السيناريو (2): شخص كان يمشي بالشارع ولقى واحد مغمى عليه، قرب منه وسحبه وفتش جيوبه وأخذ كل أغراضه وأسلحته ورماه بالبحر.", a: "📍 الأخطاء: 1- تفتيش شخص وسرقته بدون عداوة أو سيناريو مسبق. 2- تحريك الجثة ونقلها بدون تقديم مساعدة أو طلب إسعاف." }
+      ],
+      2: [
+        { q: "س1: لو فصل عليك النت أو خرجت اللعبة وفجأة كنت في مطاردة مع الشرطة وش تسوي؟", a: "أرجع بشكل سريع، ولو ما كان فيه أحد في الموقع أتأكد أني حافظ تصويري." },
+        { q: "س2: لو طحت وشالوك المسعفين للمستشفى وعالجوك وش الأشياء اللي تنساها؟", a: "سبب قتلي ومن قتلني وآخر 20 دقيقة." },
+        { q: "س3: متى يحق للعصابة تطلق النار على الشرطة مباشرة بدون تحذير؟", a: "في حال العساكر بادروا في اشتباك فوري معاهم أو قاموا العسكر بدخول مكان أو مقر العصابة." },
+        { q: "س4: كيف تتكلم وتتصرف لو كانت عليك تهمة إعدام شخص لكن أنت ما عدمته؟", a: "أبتعد عن المزاح والضحك وأتكلم بجدية وأقدر موقفي." },
+        { q: "س5: وش شرط الرهينة في سرقة البنوك والمحلات؟", a: "يكون شخص غريب (ممنوع الرهينة المتفق معه)، ولازم تحافظ على حياته أثناء التفاوض." },
+        { q: "س6: ليه ممنوع نتفق على سيناريو بالبرامج الخارجية قبل ندخل اللعبة؟", a: "لأن الاتفاق الخارجي يعتبر META GAMING ويخرب متعة التفاعل العفوي داخل اللعبة." },
+        { q: "س7: توجهت لشخص قدامي وبديت أقول له عبارات هابطة مثل (أدعس عليك / كل ...)؟", a: "الأسلوب الهابط بدون سبب أو مع سبب ممنوع بشكل صارم داخل السيرفر." },
+        { q: "س8: لو جاء واحد وصدمك بسيارته ومتعمد يقتلك بدون سبب وش تسمى هذه المخالفة؟", a: "تسمى VDM، والتصرف الصحيح أني أصور الموقف وأرفع شكوى للإدارة." },
+        { q: "س9: وش هي الأماكن الآمنة ووش القوانين فيها؟", a: "هي الأماكن اللي يمنع فيها الخطف أو القتل أو السرقة مثل المستشفيات ومراكز الشرطة." },
+        { q: "س10: في حال كنت مسقط في حالة شوت فاير هل مسموح إنك ترجع نفس المكان وتكمل الفايت؟", a: "لا." },
+        { q: "السيناريو (1): شخصان في محطة البنزين تخاصما عشان مين يعبي أول، وفجأة واحد منهم سحب سلاحه وأطلق على رأس الثاني وفنشة وركب سيارته ومشى وهو يضحك.", a: "📍 الخطأ: ارتكاب مخالفة RDM والتصعيد السريع والقتل بدون سبب يذكر." },
+        { q: "السيناريو (2): عصابة خطفت مواطن، ولما هددوه بالسلاح قعد يضحك ويقول: 'عادي أصلًا الإدارة بتعطيكم باند'، ورفض يرفع يديه.", a: "📍 الخطأ: عدم تقدير الحياة والتحدث بأمور الإدارة والباند داخل التمثيل." }
+      ],
+      3: [
+        { q: "س1: لاعب قتل شخص بدون أي سبب أو سيناريو، ما المخالفة؟", a: "RDM" },
+        { q: "س2: بعد إسقاطك، ما المسموح لك بالتحدث عنه؟", a: "تتحدث عن الألم فقط." },
+        { q: "س3: أنت وصديقك تتكلمون داخل الرول بلاي، وقلت له \"تعال فوق\"، هل تعتبر مخالفة؟", a: "نعم، ممنوع استخدام الكلمات الخارجة عن نص الـ RP." },
+        { q: "س4: كنت داخل المستشفى، وشاهدت المسعف يعالج شخصًا، وبدأت تتدخل في طريقة علاجه وتوجهه ماذا يفعل. هل يسمح لك بذلك؟", a: "لا — يمنع التدخل في عمل المسعفين." },
+        { q: "س5: هل يسمح بتعبئة البيانات في حال وجود المسعفين؟", a: "ممنوع." },
+        { q: "س6: هل مسموح استخدام كلمات مثل: \"ولد عم - فوق - الدعم المعنوي\" داخل السيرفر؟", a: "ممنوع." },
+        { q: "س7: شخص سخر من لهجتك وقال إن كلامك مضحك أو ماشابه، ثم قال لك \"كنت أمزح\". هل المزح يعفيه من المخالفة؟", a: "لا — السخرية من لهجة الشخص ممنوعة." },
+        { q: "س8: شخص قام بنشر محتوى يقلل من احترام لاعب آخر في تويتر داخل اللعبة. هل ترفع الموضوع للإدارة أو تكمل رول؟", a: "بتصعد الأمر للإدارة." },
+        { q: "س9: شخص استخدم ألفاظًا مثل: \"أحط رجلي بحلقك\" أثناء التفاعل مع لاعب آخر. حتى لو لم يكن يقصد الإهانة بشكل حقيقي، هل يسمح بذلك؟", a: "لا — الأسلوب الحواري الهابط والإهانات غير المحترمة ممنوعة." },
+        { q: "س10: هل مسموح سرقة مركبة خاصة زي سيارات المتجر؟", a: "لا." },
+        { q: "السيناريو (1): أنت وثلاثة من أخوياك قررتوا سرقة بقالة، وكنتوا تراقبونها لفترة. في يوم السرقة دخلتوا وسرقتوا البقالة، وكانت الرهينة مدني. حضر العسكر وبدأ التفاوض، وطلبتوا هروب آمن لمدة 6 دقائق بالإضافة إلى مبلغ 1700. خرجتوا من الموقع، وبعد فترة اكتشفتوا أن العسكر عرفوا مركبتكم الحمراء، وكان باقي على الهروب الآمن 4 دقائق. قررتوا التوقف وإخراج أسلحتكم وبدأتم بإطلاق النار على العسكر.", a: "📍 الأخطاء المرتكبة: 1- عدد زائد (حد سرقة البقالة للعصابة 3 وأنتم 4). 2- متطلبين رهينة واحدة (حسب القانون طلب واحد فقط لكل رهينة). 3- طلب مبلغ 1700 (الحد الأقصى للمبلغ 1500 وطلب 1700 مخالف). 4- عدم تقدير الحياة / NVL (باقي 4 دقائق على الهروب ومع ذلك وقفتوا وبدأتم الفايت). 5- كسر الهروب الآمن (طالما الهروب الآمن ما انتهى يمنع بدء فايت مع الشرطة)." }
+      ],
+      4: [
+        { q: "س1: لو طلب منك الشرطي هويتك وأنت لابس قناع وش تسوي؟", a: "أتجاوب معه وأنفذ أوامره أو أحاول أتصرف برول بلاي واقعي بدون ما أرفض بأسلوب غير منطقي." },
+        { q: "س2: وش عقوبة استغلال الأخطاء البرمجية باللعبة لو ما بلغت عنها؟", a: "العقوبة هي الحظر النهائي من السيرفر، والواجب إبلاغ الإدارة فوراً." },
+        { q: "س3: وش التدرج الصحيح قبل تستخدم السلاح ضد شخص؟", a: "أبدأ بنقاش وكلام، ثم أهدده بالسلاح، وإذا رفض وتطور الموقف أستخدم السلاح." },
+        { q: "س4: هل ينفع العصابات تتجول بالأسلحة بين المدنيين في الشوارع العامة؟", a: "ممنوع، الأسلحة والمظاهر الإجرامية تكون في أماكن العصابات والمناطق النائية." },
+        { q: "س5: لو واحد سبك أو أخطأ عليك في اللعبة كيف تتصرف؟", a: "أحافظ على هدوئي وأسجل الموقف مقطع فيديو وأفتح تكت للإدارة." },
+        { q: "س6: ليه مهم تكون مشغل برنامج التصوير طول ما أنت تلعب؟", a: "عشان يحفظ حقك ويكون دليل واضح للإدارة لو صار معك أي موقف أو مخالفة." },
+        { q: "س7: كيف تفاوض الشرطة لو كان معك رهينة داخل بنك؟", a: "أطلب طلبات معقولة مثل سيارة هروب أو عدم استخدام الشوك، وأعطيهم مهلة للرد." },
+        { q: "س8: متى يحق للشرطة تدخل وتقتحم بيت شخص أو مقر عصابة؟", a: "إذا عندهم أمر قضائي رسمي، أو كانوا يطاردون مجرم متلبس ودخل المقر أمامه مباشرة." },
+        { q: "س9: وش شرط سرقة المحلات الصغيرة مثل البقالات؟", a: "تأكد من وجود العدد المطلوب من رجال الشرطة متواجدين في الخدمة." },
+        { q: "س10: لو صابك حادث قوي وقاموا بعلاجك في المستشفى كيف تمثل الدور؟", a: "أتظاهر أني ناسي الأحداث البسيطة اللي صارت قبل الحادث مباشرة حتى يذكرني أحد بالقصة." },
+        { q: "السيناريو (1): قاموا في استيقافي استيقاف مروري أول ما نزل العسكري من المركبة قمت بالهرب منه وتوجهت لأقرب حلاق وغيرت شعري وملامحي وغيرت صوتي لتمويه العسكر.", a: "📍 الأخطاء المرتكبة: 1- استعمال مغير الصوت (مكسر) دون الرجوع للإدارة مخالفة. 2- ممنوع الهروب من الاستيقاف المروري. 3- ممنوع تغيير الملامح بعد سرقة أو مطاردة." },
+        { q: "السيناريو (2): عصابة سرقوا بنك دون أي خطة وجابوا خويهم وقالوا للشرطة هذا رهينة وأخذوا عليه هروب آمن، وفي وقت خروج الأشخاص فكوا خويهم وبادروا شوت فاير.", a: "📍 الأخطاء المرتكبة: 1- سرقة بدون تخطيط. 2- الاتفاق مع الرهينة. 3- عدم الخوف على الحياة بسبب أنه كان فيه هروب آمن. 4- افتعال فايت بدون سبب." }
+      ],
+      5: [
+        { q: "س1: وش يعني مفهوم الرول بلاي (Roleplay) باختصار؟", a: "هو تقمص شخصية خيالية وتعيش حياتها بالكامل داخل اللعبة بشكل واقعي وتتفاعل مع بقية اللاعبين وفق قوانين المدينة." },
+        { q: "س2: وش تعني مخالفة RDM مع ذكر مثال بسيط عليها؟", a: "تعني القتل العشوائي بدون سبب أو حوار مسبق (Random Deathmatch)، مثال: تمشي بالشارع وتطلق على شخص وتقتله فجأة بدون كلام." },
+        { q: "س3: وش تعني مخالفة VDM مع ذكر مثال عليها؟", a: "تعني استخدام السيارة كأداة قتال أو قتل (Vehicle Deathmatch)، مثال: تعتمد تصدم لاعب وتدهسه بالسيارة لين يموت بدون سبب رول بلاي." },
+        { q: "س4: هل التخطيط المسبق شرط أساسي قبل البدء بأي سرقة (مثل بنك أو بقالة)؟", a: "نعم، التخطيط المسبق وتوزيع الأدوار شرط أساسي ومهم لنجاح السيناريو، ويمنع السرقة العشوائية وبدون خطة." },
+        { q: "س5: هل يسمح بخطف المسعف أثناء أدائه لوظيفته الطبيعية؟", a: "لا، يمنع منعاً باتاً خطف المسعفين أو التعرض لهم أثناء أداء عملهم الإنساني والطبي." },
+        { q: "س6: هل يسمح باستخدام صديقك أو خويك كـ \"رهينة متفق معه\" في السرقات؟", a: "لا، يمنع استخدام صديقك أو الاتفاق مع شخص ليكون رهينة، ويجب أن تكون الرهينة شخصاً غريباً وتم خطفه بصورة واقعية." },
+        { q: "س7: لو كانت الدوريات يطاردونك وجتك إشارة بالتوقف، هل يحق لك تصدم دورية عمداً عشان تعطلها؟", a: "لا، يمنع صدم مركبات الشرطة عمداً لتخريب المطاردة لأنها تعتبر مخالفة RAMMING و VDM، والواجب الاعتماد على قيادة واقعية والهروب بالطرق المسموحة." },
+        { q: "س8: وش هو قانون تقدير الحياة (NVL / Value Your Life)؟", a: "هو أن تتصرف بخوف منطقي على حياتك عند التهديد بالسلاح أو عندما تكون في موقف خطير، وتنفذ الأوامر لحماية نفسك." },
+        { q: "س9: هل مسموح تسرق سيارة شخص واقف في كراج عام أو عند المستشفى؟", a: "لا، يمنع الإجرام والسرقات داخل الأماكن الآمنة مثل المستشفيات والكراجات العامة." },
+        { q: "س10: لو شفت واحد يخالف القوانين قدامك، هل يحق لك تخالف مثله أو تسبه؟", a: "لا، تستمر بالتمثيل بشكل طبيعي وتسجل الموقف مقطع فيديو وتتوجه للدعم الفني (التكت) لتقديم الشكوى." },
+        { q: "السيناريو (1): واحد كان يمشي بالسيارة ولقى لاعب ثاني واقف عند الإشارة، قام صدمه بالسيارة سرعة عالية لين مات ونزل أخذ أغراضه ومشى.", a: "📍 الأخطاء المرتكبة: 1- ارتكاب VDM (استخدام المركبة للقتل). 2- ارتكاب RDM (قتل بدون سبب أو حوار). 3- سرقة شخص بدون سيناريو مسبق." },
+        { q: "السيناريو (2): أثناء مطاردة الشرطة لأحد المشتبه بهم، تمكنت الدوريات من حشره في طريق مسدود ونزل العسكري موجهاً سلاحه ونادى عليه بالترجل، فقام اللاعب بالنزول وكان في روم بالديسكورد وقام يعطي أخوياه موقعه، وأثناء تكبيله تحول أسلوبه للاستهزاء والتطاول بعبارات هابطة واستفزازية، وفجأة وصل أخوياه واشتبكوا مع العسكر فوراً بدون تقديم أي تحذير.", a: "📍 الأخطاء المرتكبة: 1- استغلال برنامج خارجي (ميتا جيمنج Meta Gaming) لطلب المساعده بدون استخدام راديو أو جوال داخل اللعبة. 2- استخدام أسلوب حواري هابط وقلة احترام وعدم تمثيل الخوف أثناء التكبيل (Failure to RP / Fail RP). 3- المبادرة بالإطلاق المباشر على الشرطة من قبل التدخل الخارجيي بدون أي حوار أو تحذير مسبق (RDM)." }
+      ]
+    };
+
+    function renderModelPreviewContent() {
+      const modelId = document.getElementById('preview-model-select').value;
+      const container = document.getElementById('preview-content-container');
+      const items = fullModelsData[modelId];
+
+      container.innerHTML = items.map((item) => `
+        <div style="margin-bottom: 0.6rem; border-bottom: 1px solid #1e293b; padding-bottom: 0.4rem;">
+          <strong style="color: #38bdf8;">${item.q}</strong><br/>
+          <span style="color: #22c55e;">✅ الإجابة النموذجية: ${item.a}</span>
+        </div>
+      `).join('');
+    }
+
+    function loadQuestions() {
+      const modelId = document.getElementById('model-select').value;
+      const container = document.getElementById('questions-container');
+      container.innerHTML = '';
+
+      fullModelsData[modelId].forEach((item, idx) => {
+        container.innerHTML += `
+          <div class="q-box">
+            <label><strong>${item.q}</strong></label>
+            <div class="model-ans">✅ الإجابة النموذجية: ${item.a}</div>
+
+            <div style="margin-top: 0.75rem;">
+              <label style="font-size: 0.85rem; color: var(--text-color);">تقييم الإجابة والدرجة:</label>
+              <select class="score-select" data-idx="${idx}">
+                <option value="1">✅ إجابة صحيحة (1 نقطة)</option>
+                <option value="0.5">⚠️ إجابة نصف صحيحة (0.5 نقطة)</option>
+                <option value="0">❌ إجابة خاطئة / مرفوض (0 نقطة)</option>
+              </select>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    document.getElementById('submission-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      const testerName = document.getElementById('tester-name').value;
+      const testerId = document.getElementById('tester-id').value;
+      const playerName = document.getElementById('player-name').value;
+      const playerId = document.getElementById('player-id').value;
+      const hasAltAccounts = document.getElementById('has-alt-accounts').value;
+      const playerAge = document.getElementById('player-age').value;
+      const under16Val = document.getElementById('under-16').value;
+      const modelId = document.getElementById('model-select').value;
+      const modelTitle = document.getElementById('model-select').selectedOptions[0].text;
+      const timeTaken = getFormattedElapsedTime();
+
+      let totalScore = 0;
+      let maxScore = fullModelsData[modelId].length;
+
+      document.querySelectorAll('.q-box').forEach((box) => {
+        const scoreVal = parseFloat(box.querySelector('.score-select').value);
+        totalScore += scoreVal;
+      });
+
+      const percentage = Math.round((totalScore / maxScore) * 100);
+      
+      let isPassed = totalScore >= 10;
+      let statusEmoticon = isPassed ? "🎉 مقبول (ناجح)" : "❌ مرفوض (راسب - أقل من 10 نقاط)";
+      let alertMessage = isPassed 
+        ? `✅ تم إرسال تقرير النجاح للديسكورد بنجاح!\nالنقاط المكتسبة: ${totalScore} من ${maxScore}\nالحالة: ناجح 🎉\nالوقت المستغرق: ${timeTaken}`
+        : `⚠️ تم إرسال تقرير الراسبين للديسكورد!\nالنقاط المكتسبة: ${totalScore} من ${maxScore}\nالحالة: مرفوض ❌\nالوقت المستغرق: ${timeTaken}`;
+
+      let targetWebhookUrl = DISCORD_WEBHOOK_SUCCESS;
+      if (under16Val === 'نعم') {
+        targetWebhookUrl = DISCORD_WEBHOOK_UNDER16;
+        statusEmoticon += " (⚠️ تحت 16 سنة)";
+      } else if (!isPassed) {
+        targetWebhookUrl = DISCORD_WEBHOOK_FAIL;
+      }
+
+      const payload = {
+        embeds: [{
+          title: `📊 [LAM RP - RP] تقييم نهائي - ${modelTitle}`,
+          color: under16Val === 'نعم' ? 0xF59E0B : (isPassed ? 0x22C55E : 0xEF4444),
+          fields: [
+            { name: "👨‍🏫 الاسم الإداري", value: `${testerName}\n(\`<@${testerId}>\` - \`${testerId}\`)`, inline: true },
+            { name: "🎮 اسم اللاعب", value: `${playerName}\n(\`<@${playerId}>\` - \`${playerId}\`)`, inline: true },
+            { name: "🏆 النتيجة النهائية", value: `**النقاط:** ${totalScore} من ${maxScore} (${percentage}\%)\n**حالة التقييم:** ${statusEmoticon}`, inline: false },
+            { name: "🗂️ حسابات ديسكورد أخرى", value: hasAltAccounts, inline: true },
+            { name: "🔢 عمر اللاعب", value: `${playerAge} سنة`, inline: true },
+            { name: "🔞 الفئة العمرية", value: under16Val === 'نعم' ? "تحت 16 سنة" : "16 سنة أو أكثر", inline: true },
+            { name: "⏱️ الوقت المستغرق", value: `\`${timeTaken}\``, inline: false }
+          ],
+          footer: { text: "LAM RP - RP System | نظام إدارة واختبارات الرول بلاي" },
+          timestamp: new Date()
+        }]
+      };
+
+      const formData = new FormData();
+      formData.append('payload_json', JSON.stringify(payload));
+
+      const proofFile = document.getElementById('proof-file').files[0];
+      if (proofFile) {
+        formData.append('file1', proofFile);
+      }
+
+      const altFile = document.getElementById('alt-accounts-file').files[0];
+      if (hasAltAccounts === 'نعم' && altFile) {
+        formData.append('file2', altFile);
+      }
+
+      fetch(targetWebhookUrl, {
+        method: 'POST',
+        body: formData
+      })
+      .then(() => {
+        alert(alertMessage);
+        document.getElementById('submission-form').reset();
+        toggleAltAccountsField();
+        loadQuestions();
+        startTimer();
+      })
+      .catch((err) => {
+        alert('❌ حدث خطأ أثناء إرسال الملفات أو التقرير، تأكد من حجم الملفات أو اتصال الإنترنت.');
+      });
+    });
+
+    renderModelPreviewContent();
+    loadQuestions();
+    startTimer();
+  </script>
+</body>
+</html>
